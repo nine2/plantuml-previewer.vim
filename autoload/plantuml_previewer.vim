@@ -42,6 +42,15 @@ function! plantuml_previewer#open() "{{{
   call OpenBrowser(s:viewer_html_path())
 endfunction }}}
 
+function! plantuml_previewer#open_svg() "{{{
+  if !exists('*OpenBrowser')
+    echoerr 'require open-browser.vim'
+    return
+  endif
+  call plantuml_previewer#start()
+  call OpenBrowser(s:viewer_svg_path())
+endfunction }}}
+
 function! plantuml_previewer#stop() "{{{
   augroup plantuml_previewer
     autocmd!
@@ -90,6 +99,22 @@ function! s:viewer_html_path() "{{{
   return s:viewer_path() . '/index.html'
 endfunction "}}}
 
+function! s:viewer_svg_path() "{{{
+  let watched_bufnr = bufnr('%')
+  let puml_src_path = fnamemodify(bufname(watched_bufnr), ':p')
+  let puml_filename = fnamemodify(puml_src_path, ':t:r')
+  let image_type = 'svg'
+  let image_ext = s:fmt_to_ext(image_type)
+  let output_dir_path =fnamemodify(puml_src_path, ':h')
+  if !isdirectory(output_dir_path)
+    let output_dir_path = s:tmp_path
+  endif
+  let output_dir_path = output_dir_path . '/' . image_ext
+
+  let output_path = '/' . output_dir_path . '/' . puml_filename . '.' . image_ext
+  return output_path
+endfunction "}}}
+
 function! s:jar_path() "{{{
   let path = get(g:, 'plantuml_previewer#plantuml_jar_path', 0)
   return s:is_zero(path) ? s:default_jar_path : path
@@ -130,7 +155,12 @@ function! plantuml_previewer#refresh(bufnr) "{{{
   let puml_filename = fnamemodify(puml_src_path, ':t:r')
   let image_type = 'svg'
   let image_ext = s:fmt_to_ext(image_type)
-  let output_dir_path = s:tmp_path
+  let output_dir_path =fnamemodify(puml_src_path, ':h')
+  if !isdirectory(output_dir_path)
+    let output_dir_path = s:tmp_path
+  endif
+  let output_dir_path = output_dir_path . '/' . image_ext
+
   let output_path = output_dir_path . '/' . puml_filename . '.' . image_ext
   let finial_path = s:viewer_path() . '/tmp.' . image_ext
   let cmd = [
@@ -169,7 +199,12 @@ function! plantuml_previewer#save_as(...) "{{{
   let puml_src_path = expand('%:p')
   let puml_filename = fnamemodify(puml_src_path, ':t:r')
   let image_ext = s:fmt_to_ext(image_type)
-  let output_dir_path = s:tmp_path
+  let output_dir_path =fnamemodify(puml_src_path, ':h')
+  if !isdirectory(output_dir_path)
+    let output_dir_path = s:tmp_path
+  endif
+  let output_dir_path = output_dir_path . '/' . image_ext
+
   let output_path = output_dir_path . '/' . puml_filename . '.' . image_ext
   call mkdir(fnamemodify(save_path, ':p:h'), 'p')
   let cmd = [
